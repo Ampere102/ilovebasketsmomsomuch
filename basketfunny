@@ -3322,40 +3322,46 @@ local old_request = request or http.request
 local old_HttpGet = HttpGet or (http and http.Get)
 
 local function Fakereq(options)
-
-    if not getgenv().antimulti == antimulti then return end
+    if not getgenv().antimulti == antimulti then
+        print("[Fakereq] antimulti mismatch; delegating to original handler")
+        if type(options) == "string" then
+            return old_HttpGet(options)
+        else
+            return old_request(options)
+        end
+    end
 
     local url = type(options) == "string" and options or (options and options.Url)
+    print("[Fakereq] → Incoming request for:", url)
 
     if url then
-
-         -- Key system
-        if url:lower():find(TARGET_DOMAIN:lower()) and url:lower():find("service="..TARGET_SERVICE:lower()) then
+        if url:lower():find(TARGET_DOMAIN:lower()) and url:lower():find("service=" .. TARGET_SERVICE:lower()) then
+            print("[Fakereq] Returning Fakeresp_BYPASS_KEY")
             return Fakeresp_BYPASS_KEY
         end
 
-
-        -- UILib
-        if string.find(url:lower(), TARGET_UILib:lower()) then
+        if url:lower():find(TARGET_UILib:lower()) then
+            print("[Fakereq] Returning Fakeresp_UILib")
             return Fakeresp_UILib
         end
 
-        -- StensUIImages
-        if string.find(url:lower(), TARGET_StensUIImages:lower()) then
+        if url:lower():find(TARGET_StensUIImages:lower()) then
+            print("[Fakereq] Returning Fakeresp_StensUIImages")
             return Fakeresp_StensUIImages
         end
 
-        -- QuickInvoke
-        if string.find(url:lower(), TARGET_QuickInvoke:lower()) then
+        if url:lower():find(TARGET_QuickInvoke:lower()) then
+            print("[Fakereq] Returning Fakeresp_QuickInvoke")
             return Fakeresp_QuickInvoke
         end
 
-        -- NotificationUi
-        if string.find(url:lower(), TARGET_NotificationUi:lower()) then
+        if url:lower():find(TARGET_NotificationUi:lower()) then
+            print("[Fakereq] Returning Fakeresp_NotificationUi")
             return Fakeresp_NotificationUi
         end
     end
 
+    print("[Fakereq] No fake response matched; delegating to original handler")
     if type(options) == "string" then
         return old_HttpGet(options)
     else
@@ -3363,21 +3369,11 @@ local function Fakereq(options)
     end
 end
 
--- hook
 request = Fakereq
 HttpGet = Fakereq
 getgenv().request = Fakereq
 getgenv().HttpGet = Fakereq
 
-hookfunction(Fakereq, function(req, ...)
-    print("[FakeReq] called with:", req, ...)
-    if type(req) == "table" then
-      for k,v in pairs(req) do
-        print(("    %s = %s"):format(tostring(k), tostring(v)))
-      end
-    end
-    return Fakereq(req, ...)
-end)
 
 
 local script = [========[
